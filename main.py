@@ -8,9 +8,11 @@ import sane
 from PIL.ImageQt import ImageQt
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import QWidget, QListWidget, QPushButton, QApplication, QVBoxLayout, QHBoxLayout, QLabel, \
-    QFileDialog, QTabWidget, QRadioButton, QButtonGroup, QGroupBox, QLineEdit
+    QFileDialog, QTabWidget, QRadioButton, QButtonGroup, QGroupBox, QLineEdit , QStyleFactory
+
 
 app = QApplication(sys.argv)
+app.setStyle(QStyleFactory.create("Breeze"))
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
