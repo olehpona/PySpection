@@ -1,26 +1,76 @@
 #!/usr/bin/ python
 from __future__ import print_function
-
+import os
 import sys
 from datetime import datetime
-
+import json
+import tomlkit
 import sane
 from PIL.ImageQt import ImageQt
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import QWidget, QListWidget, QPushButton, QApplication, QVBoxLayout, QHBoxLayout, QLabel, \
-    QFileDialog, QTabWidget, QRadioButton, QButtonGroup, QGroupBox, QLineEdit
+    QFileDialog, QTabWidget, QRadioButton, QButtonGroup, QGroupBox, QLineEdit , QComboBox
 
 app = QApplication(sys.argv)
+app.setStyle('breeze')
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.params = {
             'mode' : 'color',
             'sh' : 300,
-            'sw' : 400
+            'sw' : 400,
+            'dpi' : 300,
+            'ah': 3507,
+            'aw':2480,
+            'size':'A4',
+            'save_mode':'png',
+            'save_extension': 'png',
+            'version':2,
+            'lang': 'English'
+        }
+        self.lang = {
+            'English' : {
+                'refresh_btn' : 'Refresh',
+                'scan_btn' : 'Scan',
+                'save_btn': 'Save',
+                'scan_tb' : 'Scan',
+                'setting_tb' : 'Setting',
+                'page_pr' : 'Page parameters',
+                'color_tx' : 'Color',
+                'color_color' : 'Color',
+                'color_grey' : 'Grey',
+                'page_tx' : 'Page scale',
+                'save_pr' : 'Save parameters',
+                'app_pr' : 'App parameters',
+                'app_set_pr' : 'Setting parameters',
+                'app_appr_pr' : 'Appearance parameters',
+                'app_set_load_btn' : 'Load settings',
+                'app_set_save_btn': 'Save settings',
+                'app_appr_lang_load_btn' : 'Add language (Json)'
+            },
+            'Українська': {
+                'refresh_btn': 'Оновити',
+                'scan_btn': 'Сканувати',
+                'save_btn': 'Зберегти',
+                'scan_tb': 'Сканування',
+                'setting_tb': 'Налаштування',
+                'page_pr': 'Параметри сторінки',
+                'color_tx': 'Колір',
+                'color_color': 'Кольоровий',
+                'color_grey': 'Ч/Б',
+                'page_tx': 'Маштабування сторінки',
+                'save_pr': 'Параметри збереження',
+                'app_pr': 'Параметри програми',
+                'app_set_pr': 'Параметри налаштувань',
+                'app_appr_pr': 'Параметри вигляду',
+                'app_set_load_btn': 'Завантажити налаштування',
+                'app_set_save_btn': 'Зберегти налаштування',
+                'app_appr_lang_load_btn': 'Додати мову (Json)'
+            }
         }
 
-
+        self.loads_setting(mode='startup')
         self.mainl = QVBoxLayout()
         self.setLayout(self.mainl)
         #adding pannel
@@ -34,7 +84,7 @@ class MainWindow(QWidget):
         self.mainl.addLayout(self.horizontal)
         #add widgets for left pannel
         self.device_list = QListWidget()
-        self.refresh_btn = QPushButton('Refresh')
+        self.refresh_btn = QPushButton(self.lang[self.params['lang']]['refresh_btn'])
         self.left_pannel.addWidget(self.device_list)
         self.left_pannel.addWidget(self.refresh_btn)
         #add right pannel
@@ -45,86 +95,157 @@ class MainWindow(QWidget):
         self.right_pannel.addWidget(self.image)
         self.right_panel_horizontal = QHBoxLayout()
         self.right_pannel.addLayout(self.right_panel_horizontal)
-        self.scan_btn = QPushButton('Scan')
-        self.save_btn = QPushButton('Save')
+        self.scan_btn = QPushButton(self.lang[self.params['lang']]['scan_btn'])
+        self.save_btn = QPushButton(self.lang[self.params['lang']]['save_btn'])
         self.right_panel_horizontal.addWidget(self.scan_btn)
         self.right_panel_horizontal.addWidget(self.save_btn)
         self.scan_widget.setLayout(self.right_pannel)
-        self.tabs.addTab(self.scan_widget , 'scan')
-
+        self.tabs.addTab(self.scan_widget , self.lang[self.params['lang']]['scan_tb'])
+        #Page Parameters
         self.setting_widget = QWidget()
         self.setting_layout = QVBoxLayout()
-        self.color_group = QGroupBox('Color managment')
-        self.button_group = QButtonGroup()
-        self.color_btn = QRadioButton('Color')
-        self.grey_btn = QRadioButton('Grey')
-        self.button_group.addButton(self.color_btn)
-        self.button_group.addButton(self.grey_btn)
-        self.color_group_layout = QVBoxLayout()
-        self.color_group.setLayout(self.color_group_layout)
-        self.color_group_layout.addWidget(self.color_btn)
-        self.color_group_layout.addWidget(self.grey_btn)
-        self.setting_layout.addWidget(self.color_group)
+        self.page_group = QGroupBox(self.lang[self.params['lang']]['page_pr'])
+        self.page_group_layout = QVBoxLayout()
+        self.colorl = QLabel(self.lang[self.params['lang']]['color_tx'])
+        self.color_drop = QComboBox()
+        self.color_drop.addItem(self.lang[self.params['lang']]['color_grey'])
+        self.color_drop.addItem(self.lang[self.params['lang']]['color_color'])
+        self.page_group.setLayout(self.page_group_layout)
+        self.page_group_layout.addWidget(self.colorl)
+        self.page_group_layout.addWidget(self.color_drop)
+        self.setting_layout.addWidget(self.page_group)
         self.setting_widget.setLayout(self.setting_layout)
+        #self.border_height_label = QLabel('Scan Area Height')
+        #self.border_width_label = QLabel('Scan Area Width')
+        #self.border_height = QLineEdit()
+        #self.border_width = QLineEdit()
+        self.dropdown = QComboBox()
+        self.dropdown.addItem('A4')
+        self.dropdown.addItem('A5')
+        self.dropdown.addItem('A6')
+        self.page_seting_autol = QLabel(self.lang[self.params['lang']]['page_tx'])
+        #self.page_seting_manuall = QLabel('Manual')
+        self.page_group_layout.addWidget(self.page_seting_autol)
+        self.page_group_layout.addWidget(self.dropdown)
+        self.dpi_drop = QComboBox()
+        #self.dpi_input.setPlaceholderText('DPI')
+        for i in range(100 , 1300 , 100):
+            self.dpi_drop.addItem(str(i))
+        self.page_group_layout.addWidget(self.dpi_drop)
+        #self.page_group_layout.addWidget(self.page_seting_manuall)
+        #self.page_group_layout.addWidget(self.border_height_label)
+        #self.page_group_layout.addWidget(self.border_height)
+        #self.page_group_layout.addWidget(self.border_width_label)
+        #self.page_group_layout.addWidget(self.border_width)
 
-        self.page_params = QGroupBox('Page Parameters')
-        self.page_layout = QVBoxLayout()
-        self.border_layout = QHBoxLayout()
-        self.size_layout = QHBoxLayout()
-        self.page_layout.addLayout(self.border_layout)
-        self.page_layout.addLayout(self.size_layout)
-        self.page_params.setLayout(self.page_layout)
-        self.setting_layout.addWidget(self.page_params)
+        #Save Parameters
+        self.save_group = QGroupBox(self.lang[self.params['lang']]['save_pr'])
+        self.save_setting_layout = QVBoxLayout()
+        self.save_drop = QComboBox()
+        self.save_drop.addItem('png')
+        self.save_drop.addItem('jpeg')
+        self.save_drop.addItem('bmp')
+        #self.save_name = QLineEdit()
+        #self.save_name.setPlaceholderText('File Name')
+        self.save_group.setLayout(self.save_setting_layout)
+        self.save_setting_layout.addWidget(self.save_drop)
+        #self.save_setting_layout.addWidget(self.save_name)
+        self.setting_layout.addWidget(self.save_group)
+        #App Parameters
+        self.app_group = QGroupBox(self.lang[self.params['lang']]['app_pr'])
+        self.app_layout = QVBoxLayout()
+        self.setting_app_group = QGroupBox(self.lang[self.params['lang']]['app_set_pr'])
+        self.setting_app_layout = QVBoxLayout()
+        self.setting_app_group.setLayout(self.setting_app_layout)
+        self.load_settings = QPushButton(self.lang[self.params['lang']]['app_set_load_btn'])
+        self.save_settings = QPushButton(self.lang[self.params['lang']]['app_set_save_btn'])
+        self.setting_app_layout.addWidget(self.load_settings)
+        self.setting_app_layout.addWidget(self.save_settings)
+        self.app_layout.addWidget(self.setting_app_group)
+        self.app_group.setLayout(self.app_layout)
+        self.appearance_settings = QGroupBox(self.lang[self.params['lang']]['app_appr_pr'])
+        self.appearance_layout = QVBoxLayout()
+        self.language_drop = QComboBox()
+        #self.language_drop.addItem('Українська')
+        #self.language_drop.addItem('English')
+        for i in self.lang.keys():
+            self.language_drop.addItem(i)
+        self.add_language = QPushButton(self.lang[self.params['lang']]['app_appr_lang_load_btn'])
+        self.appearance_layout.addWidget(self.language_drop)
+        self.appearance_layout.addWidget(self.add_language)
+        self.appearance_settings.setLayout(self.appearance_layout)
+        self.app_layout.addWidget(self.appearance_settings)
+        self.setting_layout.addWidget(self.app_group)
 
-        self.border_height_label = QLabel('Scan Area Height')
-        self.border_width_label = QLabel('Scan Area Width')
-        self.border_height = QLineEdit()
-        self.border_width = QLineEdit()
-        self.border_layout.addWidget(self.border_height_label)
-        self.border_layout.addWidget(self.border_height)
-        self.border_layout.addWidget(self.border_width_label)
-        self.border_layout.addWidget(self.border_width)
 
-        self.size_height_label = QLabel('Size Height')
-        self.size_width_label = QLabel('Size Width')
-        self.size_height = QLineEdit()
-        self.size_width = QLineEdit()
-        self.size_layout.addWidget(self.size_height_label)
-        self.size_layout.addWidget(self.size_height)
-        self.size_layout.addWidget(self.size_width_label)
-        self.size_layout.addWidget(self.size_width)
 
-        self.tabs.addTab(self.setting_widget , 'setting')
+
+
+        #tabs
+        self.tabs.addTab(self.setting_widget , self.lang[self.params['lang']]['setting_tb'])
         self.tab_layout.addWidget(self.tabs)
 
 
-        self.color_group.clicked.connect(self.setting_change)
-        self.page_params.clicked.connect(self.setting_change)
-
-
+        #connects
+        self.language_drop.currentTextChanged.connect(self.change_lang)
+        self.dpi_drop.currentTextChanged.connect(self.dpi_change)
+        self.dropdown.currentTextChanged.connect(self.size_setting)
+        self.color_drop.currentTextChanged.connect(self.color_change)
         self.refresh_btn.clicked.connect(self.update_list)
         self.scan_btn.clicked.connect(self.scan)
         self.save_btn.clicked.connect(self.save)
-    def setting_change(self):
+        self.save_settings.clicked.connect(self.saves_setting)
+        self.load_settings.clicked.connect(self.loads_setting)
+        self.save_drop.currentTextChanged.connect(self.settings_save)
+        self.apply_settings()
+    def change_lang(self , lang):
+        self.params['lang'] = lang
+
+    def color_change(self , mode):
+        for key , item in self.lang[self.params['lang']].items():
+            if item == mode:
+                print(key)
+                if key == 'color_color':
+                    self.params['mode'] = 'color'
+                else:
+                    self.params['mode'] = 'gray'
+
+    def dpi_change(self ,text):
+        self.params['dpi'] = int(text)
+        self.size_setting(self.dropdown.currentText())
+
+    def page_setting(self , height , width):
         try:
-            if self.button_group.checkedId() == -2:
-                self.params['mode'] = 'color'
-            else:
-                self.params['mode'] = 'grey'
-            self.params['ah'] = int(self.border_height.text())
-            self.params['aw'] = int(self.border_width.text())
-            self.params['sh'] = int(self.size_height.text())
-            self.params['sw'] = int(self.size_width.text())
+            self.params['ah'] = height
+            self.params['aw'] = width
         except:
-            self.params['mode'] = 'grey'
-            self.params['sh'] = 300
-            self.params['sw'] = 400
-            print('setting err')
+            print('page err')
+            print(height, ' ' , width)
+
+    def size_setting(self , current):
+        if current == 'A4':
+            height = round((29.7 / 2.54) * self.params['dpi'])
+            width = round((21 / 2.54) * self.params['dpi'])
+            print(height, ' ', width)
+            self.page_setting(height , width)
+        elif current == 'A5':
+            height = round((21 / 2.54) * self.params['dpi'])
+            width = round((14.8 / 2.54) * self.params['dpi'])
+            print(height, ' ', width)
+            self.page_setting(height, width)
+        else:
+            height = round((14.8 / 2.54) * self.params['dpi'])
+            width = round((10.5 / 2.54) * self.params['dpi'])
+            print(height, ' ', width)
+            self.page_setting(height, width)
+        self.params['size'] = current
+
 
 
 
 
     def update_list(self):
+        self.device_list.clear()
         self.devices = sane.get_devices()
         for i in self.devices:
             self.device_list.addItem(i[1] + ' - ' + i[2])
@@ -136,7 +257,7 @@ class MainWindow(QWidget):
         print(workdir)
         try:
             dt_string = datetime.now().strftime("%d-%m-%Y %H_%M_%S").split(' ')
-            self.device_im.save(workdir +'/' + dt_string[0] +'-'+dt_string[1] + '.png')
+            self.device_im.save(workdir +'/' + dt_string[0] +'-'+dt_string[1] + '.' + self.params['save_extension'], self.params['save_mode'] )
         except:
             self.image.setText('Err')
 
@@ -146,19 +267,27 @@ class MainWindow(QWidget):
         #try:
 
         dev = sane.open(self.devices[self.device_list.currentIndex().row()][0])
+        #print(dev.get_parameters())
+        #print(dev.get_options())
         try:
             dev.mode = self.params['mode']
 
         except:
-            self.image.setText('params mode err')
+            print('params mode err')
             print(self.params)
         try:
             dev.br_x = self.params['aw']
             dev.br_y = self.params['ah']
         except:
-            self.image.setText('params area err Using default')
+            print('params area err Using default')
             print(self.params)
+        try:
+            dev.resolution = self.params['dpi']
+        except:
+            print('Dpi err')
         dev.start()
+        print('')
+        print(dev.get_parameters())
         self.device_im = dev.snap()
         im = ImageQt(self.device_im)
         pix = QPixmap.fromImage(im)
@@ -167,9 +296,77 @@ class MainWindow(QWidget):
         dev.close()
         #except:
         #    self.image.setText('Err')
+    def settings_save(self , current):
+        self.params['save_mode'] = current.upper()
+        self.params['save_extension'] = current.lower()
+
+    def saves_setting(self):
+        location = os.getenv("HOME")
+        with open(location +'/' + '.pyscan_settings.json' , 'w') as file:
+            _ = {}
+            _['params'] = self.params
+            _['langs'] = self.lang
+            location = os.getenv("HOME")
+            with open(location + '/' + '.pyscan_setting.toml', 'w') as file:
+                tomlkit.dump(_, file)
+    def loads_setting(self , mode='0'):
+        location = os.getenv("HOME")
+        if mode == 'startup':
+            try:
+                with open(location +'/' + '.pyscan_setting.toml' , 'r') as file:
+                    _ = tomlkit.parse(file.read())
+                    self.params = _['params']
+                    self.lang = _['langs']
+                    #self.apply_settings()
+            except:
+                print('err load setting using default')
+        else:
+            try:
+                with open(location +'/' + '.pyscan_setting.toml' , 'r') as file:
+                    _ = tomlkit.parse(file.read())
+                    self.params = _['params']
+                    self.lang = _['langs']
+                self.apply_settings()
+            except:
+                print('err load setting using default')
+
+    def load_langs_from_file(self):
+        fdialog = QFileDialog()
+        fdialog.setMimeTypeFilters('application/json')
+        url = fdialog.getOpenFileUrl()
+        try:
+            with open(url , 'r') as file:
+                loaded = json.load(file)
+            self.lang.update(loaded)
+        except:
+            pass
+    #def load_langs(self):
+        #location = os.getenv("HOME")
+        #try:
+            #with open(location +'/' + '.pyscan_langs.json' , 'r') as file:
+                #self.lang = json.load(file)
+        #except:
+            #with open(location + '/' + '.pyscan_langs.json', 'w') as file:
+                #json.dump(self.lang , file)
+
+
+    def apply_settings(self):
+        try:
+            if self.params['mode'] == 'color':
+                self.color_drop.setCurrentText(self.lang[self.params['lang']]['color_color'])
+            else:
+                self.color_drop.setCurrentText(self.lang[self.params['lang']]['color_grey'])
+            self.dropdown.setCurrentText(self.params['size'])
+            self.dpi_drop.setCurrentText(str(self.params['dpi']))
+            self.save_drop.setCurrentText(self.params['save_extension'])
+        except:
+            pass
+
+
 def run():
     sane.init()
     window=MainWindow()
+    #window.loads_setting()
     window.update_list()
     window.show()
     window.resize(600 , 500)
@@ -186,6 +383,5 @@ if __name__ == '__main__':
     window.show()
     window.resize(600 , 500)
     window.setWindowTitle('PyScan')
-
     app.exec()
     sane.exit()
