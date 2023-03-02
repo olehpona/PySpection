@@ -6,10 +6,12 @@ from datetime import datetime
 import json
 import tomlkit
 import sane
+import threading
 from PIL.ImageQt import ImageQt
-from PyQt6.QtGui import QPixmap
+from PyQt6.QtGui import QPixmap , QIcon
 from PyQt6.QtWidgets import QWidget, QListWidget, QPushButton, QApplication, QVBoxLayout, QHBoxLayout, QLabel, \
     QFileDialog, QTabWidget, QRadioButton, QButtonGroup, QGroupBox, QLineEdit , QComboBox
+
 
 app = QApplication(sys.argv)
 app.setStyle('breeze')
@@ -69,6 +71,10 @@ class MainWindow(QWidget):
                 'app_appr_lang_load_btn': 'Додати мову (Json)'
             }
         }
+
+        self.current_scan_state=False
+
+
 
         self.loads_setting(mode='startup')
         self.mainl = QVBoxLayout()
@@ -202,17 +208,23 @@ class MainWindow(QWidget):
         self.params['lang'] = lang
 
     def color_change(self , mode):
-        for key , item in self.lang[self.params['lang']].items():
-            if item == mode:
-                print(key)
-                if key == 'color_color':
-                    self.params['mode'] = 'color'
-                else:
-                    self.params['mode'] = 'gray'
+        try:
+            for key , item in self.lang[self.params['lang']].items():
+                if item == mode:
+                    print(key)
+                    if key == 'color_color':
+                        self.params['mode'] = 'color'
+                    else:
+                        self.params['mode'] = 'gray'
+        except:
+            print('Color set err')
 
     def dpi_change(self ,text):
-        self.params['dpi'] = int(text)
-        self.size_setting(self.dropdown.currentText())
+        try:
+            self.params['dpi'] = int(text)
+            self.size_setting(self.dropdown.currentText())
+        except:
+            print('Dpi chage err')
 
     def page_setting(self , height , width):
         try:
@@ -223,29 +235,39 @@ class MainWindow(QWidget):
             print(height, ' ' , width)
 
     def size_setting(self , current):
-        if current == 'A4':
-            height = round((29.7 / 2.54) * self.params['dpi'])
-            width = round((21 / 2.54) * self.params['dpi'])
-            print(height, ' ', width)
-            self.page_setting(height , width)
-        elif current == 'A5':
-            height = round((21 / 2.54) * self.params['dpi'])
-            width = round((14.8 / 2.54) * self.params['dpi'])
-            print(height, ' ', width)
-            self.page_setting(height, width)
-        else:
-            height = round((14.8 / 2.54) * self.params['dpi'])
-            width = round((10.5 / 2.54) * self.params['dpi'])
-            print(height, ' ', width)
-            self.page_setting(height, width)
-        self.params['size'] = current
+        try:
+            if current == 'A4':
+                height = round((29.7 / 2.54) * self.params['dpi'])
+                width = round((21 / 2.54) * self.params['dpi'])
+                print(height, ' ', width)
+                self.page_setting(height , width)
+            elif current == 'A5':
+                height = round((21 / 2.54) * self.params['dpi'])
+                width = round((14.8 / 2.54) * self.params['dpi'])
+                print(height, ' ', width)
+                self.page_setting(height, width)
+            else:
+                height = round((14.8 / 2.54) * self.params['dpi'])
+                width = round((10.5 / 2.54) * self.params['dpi'])
+                print(height, ' ', width)
+                self.page_setting(height, width)
+            self.params['size'] = current
+        except:
+            print('Size change err')
 
 
 
 
 
     def update_list(self):
-        self.device_list.clear()
+        try:
+            self.device_list.clear()
+            threat = threading.Thread(target=self.update_devices_threat)
+            threat.start()
+        except:
+            print('Device update err')
+
+    def update_devices_threat(self):
         self.devices = sane.get_devices()
         for i in self.devices:
             self.device_list.addItem(i[1] + ' - ' + i[2])
@@ -259,14 +281,17 @@ class MainWindow(QWidget):
             dt_string = datetime.now().strftime("%d-%m-%Y %H_%M_%S").split(' ')
             self.device_im.save(workdir +'/' + dt_string[0] +'-'+dt_string[1] + '.' + self.params['save_extension'], self.params['save_mode'] )
         except:
-            self.image.setText('Err')
+            self.image.setText('Save err')
 
     def scan(self):
         #print(self.device_list.currentIndex().row())
         #print(self.devices[self.device_list.currentIndex().row()])
         #try:
-
-        dev = sane.open(self.devices[self.device_list.currentIndex().row()][0])
+        try:
+            dev = sane.open(self.devices[self.device_list.currentIndex().row()][0])
+        except:
+            print('Device open err')
+            return
         #print(dev.get_parameters())
         #print(dev.get_options())
         try:
@@ -285,50 +310,71 @@ class MainWindow(QWidget):
             dev.resolution = self.params['dpi']
         except:
             print('Dpi err')
-        dev.start()
-        print('')
-        print(dev.get_parameters())
-        self.device_im = dev.snap()
-        im = ImageQt(self.device_im)
-        pix = QPixmap.fromImage(im)
-        pix = pix.scaled(self.params['sw'], self.params['sh'])
-        self.image.setPixmap(pix)
-        dev.close()
+        try:
+            if not self.current_scan_state:
+                threat = threading.Thread(target=self.scan_thread , args=(dev,))
+                threat.start()
+            else:
+                pass
+        except:
+            print('threat err')
         #except:
         #    self.image.setText('Err')
+    def scan_thread(self , dev):
+        try:
+            self.current_scan_state = True
+            dev.start()
+            self.device_im = dev.snap()
+            im = ImageQt(self.device_im)
+            pix = QPixmap.fromImage(im)
+            pix = pix.scaled(self.params['sw'], self.params['sh'])
+            self.image.setPixmap(pix)
+            dev.close()
+            self.current_scan_state = False
+        except:
+            print('scan err')
+            self.current_scan_state = False
+
+
     def settings_save(self , current):
         self.params['save_mode'] = current.upper()
         self.params['save_extension'] = current.lower()
 
     def saves_setting(self):
-        location = os.getenv("HOME")
-        with open(location +'/' + '.pyscan_settings.json' , 'w') as file:
-            _ = {}
-            _['params'] = self.params
-            _['langs'] = self.lang
+        try:
             location = os.getenv("HOME")
-            with open(location + '/' + '.pyscan_setting.toml', 'w') as file:
-                tomlkit.dump(_, file)
+            with open(location +'/' + '.pyscan_settings.json' , 'w') as file:
+                _ = {}
+                _['params'] = self.params
+                _['langs'] = self.lang
+                location = os.getenv("HOME")
+                with open(location + '/' + '.pyscan_setting.toml', 'w') as file:
+                    tomlkit.dump(_, file)
+        except:
+            print('Setting save err')
     def loads_setting(self , mode='0'):
-        location = os.getenv("HOME")
-        if mode == 'startup':
-            try:
-                with open(location +'/' + '.pyscan_setting.toml' , 'r') as file:
-                    _ = tomlkit.parse(file.read())
-                    self.params = _['params']
-                    self.lang = _['langs']
-                    #self.apply_settings()
-            except:
-                print('err load setting using default')
-        else:
-            try:
-                with open(location +'/' + '.pyscan_setting.toml' , 'r') as file:
-                    _ = tomlkit.parse(file.read())
-                    self.params = _['params']
-                    self.lang = _['langs']
-                self.apply_settings()
-            except:
-                print('err load setting using default')
+        try:
+            location = os.getenv("HOME")
+            if mode == 'startup':
+                try:
+                    with open(location +'/' + '.pyscan_setting.toml' , 'r') as file:
+                        _ = tomlkit.parse(file.read())
+                        self.params = _['params']
+                        self.lang = _['langs']
+                        #self.apply_settings()
+                except:
+                    print('err load setting using default')
+            else:
+                try:
+                    with open(location +'/' + '.pyscan_setting.toml' , 'r') as file:
+                        _ = tomlkit.parse(file.read())
+                        self.params = _['params']
+                        self.lang = _['langs']
+                    self.apply_settings()
+                except:
+                    print('err load setting using default')
+        except:
+            print('Setting load err')
 
     def load_langs_from_file(self):
         fdialog = QFileDialog()
@@ -339,7 +385,7 @@ class MainWindow(QWidget):
                 loaded = json.load(file)
             self.lang.update(loaded)
         except:
-            pass
+            print('Load language from file err')
     #def load_langs(self):
         #location = os.getenv("HOME")
         #try:
@@ -359,8 +405,9 @@ class MainWindow(QWidget):
             self.dropdown.setCurrentText(self.params['size'])
             self.dpi_drop.setCurrentText(str(self.params['dpi']))
             self.save_drop.setCurrentText(self.params['save_extension'])
+            self.language_drop.setCurrentText(self.params['lang'])
         except:
-            pass
+            print('Apply settings err')
 
 
 def run():
@@ -376,12 +423,4 @@ def run():
     sane.exit()
 
 if __name__ == '__main__':
-    #app.setStyle('breeze')
-    sane.init()
-    window=MainWindow()
-    window.update_list()
-    window.show()
-    window.resize(600 , 500)
-    window.setWindowTitle('PyScan')
-    app.exec()
-    sane.exit()
+    run()
