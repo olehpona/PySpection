@@ -371,13 +371,12 @@ class MainWindow(QWidget):
     def saves_setting(self):
         try:
             location = os.getenv("HOME")
-            with open(location +'/' + '.pyscan_settings.json' , 'w') as file:
-                _ = {}
-                _['params'] = self.params
-                _['langs'] = self.lang
-                location = os.getenv("HOME")
-                with open(location + '/' + '.pyscan_setting.toml', 'w') as file:
-                    tomlkit.dump(_, file)
+            _ = {}
+            _['params'] = self.params
+            _['langs'] = self.lang
+            location = os.getenv("HOME")
+            with open(location + '/' + '.pyscan_setting.toml', 'w') as file:
+                tomlkit.dump(_, file)
         except:
             print('Setting save err')
 
