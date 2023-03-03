@@ -1,4 +1,4 @@
-# PyScan
+# PySpection
 ## About
 ### This app is simply app for scan documents and images.
 ### App using:
@@ -6,7 +6,7 @@
 2. python-sane
 3. tomlkit
 4. PIL modules.
-### Why PyScan?
+### Why PySpection?
 1. Simply
 2. Customizible
 3. Clear
