@@ -13,6 +13,7 @@ from PyQt6.QtWidgets import QWidget, QListWidget, QPushButton, QApplication, QVB
     QFileDialog, QTabWidget, QGroupBox, QLineEdit , QComboBox , QCheckBox
 from PyQt6.QtCore import Qt
 
+
 app = QApplication(sys.argv)
 app.setStyle('breeze')
 class MainWindow(QWidget):
