@@ -10,8 +10,8 @@ import threading
 from PIL.ImageQt import ImageQt
 from PyQt6.QtGui import QPixmap , QIcon
 from PyQt6.QtWidgets import QWidget, QListWidget, QPushButton, QApplication, QVBoxLayout, QHBoxLayout, QLabel, \
-    QFileDialog, QTabWidget, QRadioButton, QButtonGroup, QGroupBox, QLineEdit , QComboBox
-
+    QFileDialog, QTabWidget, QGroupBox, QLineEdit , QComboBox , QCheckBox
+from PyQt6.QtCore import Qt
 
 app = QApplication(sys.argv)
 app.setStyle('breeze')
@@ -29,7 +29,8 @@ class MainWindow(QWidget):
             'save_mode':'png',
             'save_extension': 'png',
             'version':2,
-            'lang': 'English'
+            'lang': 'English',
+            'auto_settings' : True
         }
         self.lang = {
             'English' : {
@@ -49,7 +50,8 @@ class MainWindow(QWidget):
                 'app_appr_pr' : 'Appearance parameters',
                 'app_set_load_btn' : 'Load settings',
                 'app_set_save_btn': 'Save settings',
-                'app_appr_lang_load_btn' : 'Add language (Json)'
+                'app_appr_lang_load_btn' : 'Add language (Json)',
+                'app_set_auto' : 'Auto load/save settings'
             },
             'Українська': {
                 'refresh_btn': 'Оновити',
@@ -68,15 +70,19 @@ class MainWindow(QWidget):
                 'app_appr_pr': 'Параметри вигляду',
                 'app_set_load_btn': 'Завантажити налаштування',
                 'app_set_save_btn': 'Зберегти налаштування',
-                'app_appr_lang_load_btn': 'Додати мову (Json)'
+                'app_appr_lang_load_btn': 'Додати мову (Json)',
+                'app_set_auto': 'Авто збереження/загрузка налаштувань'
             }
         }
 
+        self.custome = {}
+
         self.current_scan_state=False
 
+        self.add_size = AddSize(self.add_new_size)
+        if self.params['auto_settings']:
+            self.loads_setting(mode='startup')
 
-
-        self.loads_setting(mode='startup')
         self.mainl = QVBoxLayout()
         self.setLayout(self.mainl)
         #adding pannel
@@ -165,8 +171,11 @@ class MainWindow(QWidget):
         self.setting_app_group.setLayout(self.setting_app_layout)
         self.load_settings = QPushButton(self.lang[self.params['lang']]['app_set_load_btn'])
         self.save_settings = QPushButton(self.lang[self.params['lang']]['app_set_save_btn'])
+        self.auto_settings = QCheckBox(self.lang[self.params['lang']]['app_set_auto'])
+
         self.setting_app_layout.addWidget(self.load_settings)
         self.setting_app_layout.addWidget(self.save_settings)
+        self.setting_app_layout.addWidget(self.auto_settings)
         self.app_layout.addWidget(self.setting_app_group)
         self.app_group.setLayout(self.app_layout)
         self.appearance_settings = QGroupBox(self.lang[self.params['lang']]['app_appr_pr'])
@@ -203,9 +212,27 @@ class MainWindow(QWidget):
         self.save_settings.clicked.connect(self.saves_setting)
         self.load_settings.clicked.connect(self.loads_setting)
         self.save_drop.currentTextChanged.connect(self.settings_save)
-        self.apply_settings()
+        self.add_language.clicked.connect(self.load_langs_from_file)
+        self.auto_settings.setTristate(False)
+        self.auto_settings.stateChanged.connect(self.change_auto_settings)
+        if self.params['auto_settings']:
+            self.apply_settings()
+            self.auto_settings.setCheckState(Qt.CheckState(2))
+
+
+    def change_auto_settings(self , state):
+        if state == 0:
+            self.params['auto_settings'] = False
+        else:
+            self.params['auto_settings'] = True
     def change_lang(self , lang):
         self.params['lang'] = lang
+
+    def add_new_size(self , height , width):
+        self.custome[height , 'x' , width] = {'height': int(height) , 'width' : int(width)}
+        self.dropdown.addItem(height , 'x' , width)
+
+
 
     def color_change(self , mode):
         try:
@@ -275,7 +302,7 @@ class MainWindow(QWidget):
     def save(self):
         Fdialog = QFileDialog()
         #Fdialog.setOptions(QFileDialog.ShowDirsOnly)
-        workdir = Fdialog.getExistingDirectory()
+        workdir = Fdialog.getExistingDirectory(caption='Chose save directory')
         print(workdir)
         try:
             dt_string = datetime.now().strftime("%d-%m-%Y %H_%M_%S").split(' ')
@@ -352,6 +379,7 @@ class MainWindow(QWidget):
                     tomlkit.dump(_, file)
         except:
             print('Setting save err')
+
     def loads_setting(self , mode='0'):
         try:
             location = os.getenv("HOME")
@@ -377,15 +405,17 @@ class MainWindow(QWidget):
             print('Setting load err')
 
     def load_langs_from_file(self):
-        fdialog = QFileDialog()
-        fdialog.setMimeTypeFilters('application/json')
-        url = fdialog.getOpenFileUrl()
         try:
+            fdialog = QFileDialog()
+            fdialog.setMimeTypeFilters(['application/json'])
+            url = fdialog.getOpenFileUrl(caption='Chose language file' , filter='*.json')
+            url = url[0].url().split('//')[1]
             with open(url , 'r') as file:
                 loaded = json.load(file)
             self.lang.update(loaded)
+            print(self.lang)
         except:
-            print('Load language from file err')
+            print('lang load err')
     #def load_langs(self):
         #location = os.getenv("HOME")
         #try:
@@ -406,9 +436,46 @@ class MainWindow(QWidget):
             self.dpi_drop.setCurrentText(str(self.params['dpi']))
             self.save_drop.setCurrentText(self.params['save_extension'])
             self.language_drop.setCurrentText(self.params['lang'])
+            if self.params['auto_settings']:
+                self.auto_settings.setCheckState(Qt.CheckState(2))
+            else:
+                self.auto_settings.setCheckState(Qt.CheckState(0))
         except:
             print('Apply settings err')
+            self.save_settings()
 
+
+class AddSize(QWidget):
+    def __init__(self , func):
+        super().__init__()
+        self.func = func
+        self.setWindowTitle('Add custom scan size')
+        self.layout = QVBoxLayout()
+        self.input_layout  = QHBoxLayout()
+        self.button_layout = QHBoxLayout()
+        self.height = QLineEdit()
+        self.height.setPlaceholderText('Height (cm)')
+        self.width = QLineEdit()
+        self.width.setPlaceholderText('Width (cm)')
+        self.input_layout.addWidget(self.height)
+        self.input_layout.addWidget(self.width)
+        self.layout.addLayout(self.input_layout)
+
+        self.apply_btn = QPushButton('Confirm')
+        self.cancel_btn = QPushButton('Cancel')
+        self.button_layout.addWidget(self.apply_btn)
+        self.button_layout.addWidget(self.cancel_btn)
+        self.apply_btn.clicked.connect(self.apply_size)
+        self.cancel_btn.clicked.connect(self.cancel)
+
+        self.setLayout(self.layout)
+
+    def apply_size(self):
+        self.close()
+        self.func(self.height.text , self.width.text)
+
+    def cancel(self):
+        self.close()
 
 def run():
     sane.init()
@@ -420,6 +487,8 @@ def run():
     window.setWindowTitle('PyScan')
 
     app.exec()
+    if window.params['auto_settings']:
+        window.saves_setting()
     sane.exit()
 
 if __name__ == '__main__':
