@@ -15,3 +15,12 @@
     git clone https://github.com/whyDEDUS/PyScan.git
 ### 2. Start build:
     python3 setup.py install
+## How to install
+### 1. Download latest release:
+    https://github.com/whyDEDUS/PyScan/releases
+### 2. Extract archive:
+    1. Using tar utility:
+        tar -xf v-3.21.tar.gz
+    2. Using default file manager or other apps
+### 3. Run shell script:
+    bush ./install.sh
