@@ -29,7 +29,7 @@ class MainWindow(QWidget):
             'size':'A4',
             'save_mode':'png',
             'save_extension': 'png',
-            'version':2,
+            'version':3,
             'lang': 'English',
             'auto_settings' : True
         }
@@ -52,7 +52,9 @@ class MainWindow(QWidget):
                 'app_set_load_btn' : 'Load settings',
                 'app_set_save_btn': 'Save settings',
                 'app_appr_lang_load_btn' : 'Add language (Json)',
-                'app_set_auto' : 'Auto load/save settings'
+                'app_set_auto' : 'Auto load/save settings',
+                'load_lang_win_title': 'Chose language file',
+                'save_win_title' : 'Chose directory to save file'
             },
             'Українська': {
                 'refresh_btn': 'Оновити',
@@ -72,7 +74,75 @@ class MainWindow(QWidget):
                 'app_set_load_btn': 'Завантажити налаштування',
                 'app_set_save_btn': 'Зберегти налаштування',
                 'app_appr_lang_load_btn': 'Додати мову (Json)',
-                'app_set_auto': 'Авто збереження/загрузка налаштувань'
+                'app_set_auto': 'Авто збереження/загрузка налаштувань',
+                'load_lang_win_title': 'Виберіть мовний файл',
+                'save_win_title' : 'Виберіть директорію для запису файла'
+            },
+            'Français': {
+                'refresh_btn': 'Actualiser',
+                'scan_btn': 'Scanner',
+                'save_btn': 'Enregistrer',
+                'scan_tb': 'Numériser',
+                'setting_tb': 'Paramètre',
+                'page_pr': 'Paramètres de la page',
+                'color_tx': 'Couleur',
+                'color_color': 'Couleur',
+                'color_grey': 'Gris',
+                'page_tx': 'Échelle de la page',
+                'save_pr': 'Enregistrer les paramètres',
+                'app_pr': "Paramètres de l'application",
+                'app_set_pr': 'Paramètres de réglage',
+                'app_appr_pr': "Paramètres d'apparence",
+                'app_set_load_btn': 'Charger les paramètres',
+                'app_set_save_btn': 'Enregistrer les paramètres',
+                'app_appr_lang_load_btn': 'Ajouter une langue (Json)',
+                'app_set_auto': 'Charger/enregistrer automatiquement les paramètres',
+                'load_lang_win_title': 'Choisir le fichier de langue',
+                'save_win_title': 'Choisir le répertoire pour enregistrer le fichier'
+            },
+            'Polski':{
+                'refresh_btn': 'Odśwież',
+                'scan_btn': 'Skanuj',
+                'save_btn': 'Zapisz',
+                'scan_tb': 'Skanuj',
+                'setting_tb': 'Ustawienie',
+                'page_pr': 'Parametry strony',
+                'color_tx': 'Kolor',
+                'color_color': 'Kolor',
+                'color_grey': 'Szary',
+                'page_tx': 'Skala strony',
+                'save_pr': 'Zapisz parametry',
+                'app_pr': 'Parametry aplikacji',
+                'app_set_pr': 'Ustawianie parametrów',
+                'app_appr_pr': 'Parametry wyglądu',
+                'app_set_load_btn': 'Załaduj ustawienia',
+                'app_set_save_btn': 'Zapisz ustawienia',
+                'app_appr_lang_load_btn': 'Dodaj język (Json)',
+                'app_set_auto': 'Automatyczne ładowanie/zapisywanie ustawień',
+                'load_lang_win_title': 'Wybierz plik językowy',
+                'save_win_title': 'Wybierz katalog do zapisania pliku'
+            },
+            'Deutsch' : {
+                'refresh_btn': 'Aktualisieren',
+                'scan_btn': 'Scannen',
+                'save_btn': 'Speichern',
+                'scan_tb': 'Scannen',
+                'setting_tb': 'Einstellung',
+                'page_pr': 'Seitenparameter',
+                'color_tx': 'Farbe',
+                'color_color': 'Farbe',
+                'color_grey': 'Grau',
+                'page_tx': 'Seitenskalierung',
+                'save_pr': 'Parameter speichern',
+                'app_pr': 'App-Parameter',
+                'app_set_pr': 'Einstellungsparameter',
+                'app_appr_pr': 'Darstellungsparameter',
+                'app_set_load_btn': 'Einstellungen laden',
+                'app_set_save_btn': 'Einstellungen speichern',
+                'app_appr_lang_load_btn': 'Sprache hinzufügen (Json)',
+                'app_set_auto': 'Einstellungen automatisch laden/speichern',
+                'load_lang_win_title': 'Sprachdatei wählen',
+                'save_win_title': 'Verzeichnis zum Speichern der Datei wählen'
             }
         }
 
@@ -303,7 +373,7 @@ class MainWindow(QWidget):
     def save(self):
         Fdialog = QFileDialog()
         #Fdialog.setOptions(QFileDialog.ShowDirsOnly)
-        workdir = Fdialog.getExistingDirectory(caption='Chose save directory')
+        workdir = Fdialog.getExistingDirectory(caption=self.lang[self.params['lang']]['save_win_title'])
         print(workdir)
         try:
             dt_string = datetime.now().strftime("%d-%m-%Y %H_%M_%S").split(' ')
@@ -388,7 +458,7 @@ class MainWindow(QWidget):
                     with open(location +'/' + '.pyscan_setting.toml' , 'r') as file:
                         _ = tomlkit.parse(file.read())
                         self.params = _['params']
-                        self.lang = _['langs']
+                        self.lang.update(_['langs'])
                         #self.apply_settings()
                 except:
                     print('err load setting using default')
@@ -408,7 +478,7 @@ class MainWindow(QWidget):
         try:
             fdialog = QFileDialog()
             fdialog.setMimeTypeFilters(['application/json'])
-            url = fdialog.getOpenFileUrl(caption='Chose language file' , filter='*.json')
+            url = fdialog.getOpenFileUrl(caption=self.lang[self.params['lang']]['load_lang_win_title'] , filter='*.json')
             url = url[0].url().split('//')[1]
             with open(url , 'r') as file:
                 loaded = json.load(file)
@@ -484,7 +554,7 @@ def run():
     window.update_list()
     window.show()
     window.resize(600 , 500)
-    window.setWindowTitle('PyScan')
+    window.setWindowTitle('PySpection')
 
     app.exec()
     if window.params['auto_settings']:
