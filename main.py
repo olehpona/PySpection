@@ -1,4 +1,4 @@
-#!/usr/bin/ python
+
 from __future__ import print_function
 import os
 import sys
@@ -12,10 +12,11 @@ from PyQt6.QtGui import QPixmap , QIcon
 from PyQt6.QtWidgets import QWidget, QListWidget, QPushButton, QApplication, QVBoxLayout, QHBoxLayout, QLabel, \
     QFileDialog, QTabWidget, QGroupBox, QLineEdit , QComboBox , QCheckBox
 from PyQt6.QtCore import Qt
-
+from qt_material import apply_stylesheet
 
 app = QApplication(sys.argv)
-app.setStyle('breeze')
+#apply_stylesheet(app , theme='light_amber.xml')
+app.setStyle('Breeze')
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
@@ -254,6 +255,9 @@ class MainWindow(QWidget):
         self.language_drop = QComboBox()
         #self.language_drop.addItem('Українська')
         #self.language_drop.addItem('English')
+        self.theme_drop = QComboBox()
+        self.theme_drop.addItem('Material dark')
+        self.theme_drop.addItem('Material light')
         for i in self.lang.keys():
             self.language_drop.addItem(i)
         self.add_language = QPushButton(self.lang[self.params['lang']]['app_appr_lang_load_btn'])
@@ -262,7 +266,7 @@ class MainWindow(QWidget):
         self.appearance_settings.setLayout(self.appearance_layout)
         self.app_layout.addWidget(self.appearance_settings)
         self.setting_layout.addWidget(self.app_group)
-
+        self.appearance_layout.addWidget(self.theme_drop)
 
 
 
@@ -273,6 +277,7 @@ class MainWindow(QWidget):
 
 
         #connects
+        self.theme_drop.currentTextChanged.connect(self.apply_theme)
         self.language_drop.currentTextChanged.connect(self.change_lang)
         self.dpi_drop.currentTextChanged.connect(self.dpi_change)
         self.dropdown.currentTextChanged.connect(self.size_setting)
@@ -353,6 +358,16 @@ class MainWindow(QWidget):
         except:
             print('Size change err')
 
+
+    def apply_theme(self , text):
+        try:
+            if text == "Material light":
+                apply_stylesheet(app, theme='light_amber.xml')
+            elif text == "Material dark":
+                apply_stylesheet(app, theme='dark_amber.xml')
+            self.params['theme'] = text
+        except:
+            print('Theme err')
 
 
 
@@ -506,13 +521,15 @@ class MainWindow(QWidget):
             self.dpi_drop.setCurrentText(str(self.params['dpi']))
             self.save_drop.setCurrentText(self.params['save_extension'])
             self.language_drop.setCurrentText(self.params['lang'])
+            self.theme_drop.setCurrentText(self.params['theme'])
+            self.apply_theme(self.params['theme'])
             if self.params['auto_settings']:
                 self.auto_settings.setCheckState(Qt.CheckState(2))
             else:
                 self.auto_settings.setCheckState(Qt.CheckState(0))
         except:
             print('Apply settings err')
-            self.save_settings()
+            self.saves_setting()
 
 
 class AddSize(QWidget):
@@ -553,7 +570,7 @@ def run():
     #window.loads_setting()
     window.update_list()
     window.show()
-    window.resize(600 , 500)
+    window.resize(800 , 500)
     window.setWindowTitle('PySpection')
 
     app.exec()
