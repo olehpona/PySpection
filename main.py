@@ -1,4 +1,3 @@
-
 from __future__ import print_function
 import os
 import sys
@@ -8,54 +7,56 @@ import tomlkit
 import sane
 import threading
 from PIL.ImageQt import ImageQt
-from PyQt6.QtGui import QPixmap , QIcon
+from PyQt6.QtGui import QPixmap, QIcon
 from PyQt6.QtWidgets import QWidget, QListWidget, QPushButton, QApplication, QVBoxLayout, QHBoxLayout, QLabel, \
-    QFileDialog, QTabWidget, QGroupBox, QLineEdit , QComboBox , QCheckBox
+    QFileDialog, QTabWidget, QGroupBox, QLineEdit, QComboBox, QCheckBox
 from PyQt6.QtCore import Qt
 from qt_material import apply_stylesheet
 
 app = QApplication(sys.argv)
-#apply_stylesheet(app , theme='light_amber.xml')
+apply_stylesheet(app, theme='light_amber.xml')
 app.setStyle('Breeze')
+
+
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.params = {
-            'mode' : 'color',
-            'sh' : 300,
-            'sw' : 400,
-            'dpi' : 300,
+            'mode': 'color',
+            'sh': 300,
+            'sw': 400,
+            'dpi': 300,
             'ah': 3507,
-            'aw':2480,
-            'size':'A4',
-            'save_mode':'png',
+            'aw': 2480,
+            'size': 'A4',
+            'save_mode': 'png',
             'save_extension': 'png',
-            'version':3,
+            'version': 3,
             'lang': 'English',
-            'auto_settings' : True
+            'auto_settings': True
         }
         self.lang = {
-            'English' : {
-                'refresh_btn' : 'Refresh',
-                'scan_btn' : 'Scan',
+            'English': {
+                'refresh_btn': 'Refresh',
+                'scan_btn': 'Scan',
                 'save_btn': 'Save',
-                'scan_tb' : 'Scan',
-                'setting_tb' : 'Setting',
-                'page_pr' : 'Page parameters',
-                'color_tx' : 'Color',
-                'color_color' : 'Color',
-                'color_grey' : 'Grey',
-                'page_tx' : 'Page scale',
-                'save_pr' : 'Save parameters',
-                'app_pr' : 'App parameters',
-                'app_set_pr' : 'Setting parameters',
-                'app_appr_pr' : 'Appearance parameters',
-                'app_set_load_btn' : 'Load settings',
+                'scan_tb': 'Scan',
+                'setting_tb': 'Setting',
+                'page_pr': 'Page parameters',
+                'color_tx': 'Color',
+                'color_color': 'Color',
+                'color_grey': 'Grey',
+                'page_tx': 'Page scale',
+                'save_pr': 'Save parameters',
+                'app_pr': 'App parameters',
+                'app_set_pr': 'Setting parameters',
+                'app_appr_pr': 'Appearance parameters',
+                'app_set_load_btn': 'Load settings',
                 'app_set_save_btn': 'Save settings',
-                'app_appr_lang_load_btn' : 'Add language (Json)',
-                'app_set_auto' : 'Auto load/save settings',
+                'app_appr_lang_load_btn': 'Add language (Json)',
+                'app_set_auto': 'Auto load/save settings',
                 'load_lang_win_title': 'Chose language file',
-                'save_win_title' : 'Chose directory to save file'
+                'save_win_title': 'Chose directory to save file'
             },
             'Українська': {
                 'refresh_btn': 'Оновити',
@@ -77,7 +78,7 @@ class MainWindow(QWidget):
                 'app_appr_lang_load_btn': 'Додати мову (Json)',
                 'app_set_auto': 'Авто збереження/загрузка налаштувань',
                 'load_lang_win_title': 'Виберіть мовний файл',
-                'save_win_title' : 'Виберіть директорію для запису файла'
+                'save_win_title': 'Виберіть директорію для запису файла'
             },
             'Français': {
                 'refresh_btn': 'Actualiser',
@@ -101,7 +102,7 @@ class MainWindow(QWidget):
                 'load_lang_win_title': 'Choisir le fichier de langue',
                 'save_win_title': 'Choisir le répertoire pour enregistrer le fichier'
             },
-            'Polski':{
+            'Polski': {
                 'refresh_btn': 'Odśwież',
                 'scan_btn': 'Skanuj',
                 'save_btn': 'Zapisz',
@@ -123,7 +124,7 @@ class MainWindow(QWidget):
                 'load_lang_win_title': 'Wybierz plik językowy',
                 'save_win_title': 'Wybierz katalog do zapisania pliku'
             },
-            'Deutsch' : {
+            'Deutsch': {
                 'refresh_btn': 'Aktualisieren',
                 'scan_btn': 'Scannen',
                 'save_btn': 'Speichern',
@@ -149,7 +150,7 @@ class MainWindow(QWidget):
 
         self.custome = {}
 
-        self.current_scan_state=False
+        self.current_scan_state = False
 
         self.add_size = AddSize(self.add_new_size)
         if self.params['auto_settings']:
@@ -157,21 +158,21 @@ class MainWindow(QWidget):
 
         self.mainl = QVBoxLayout()
         self.setLayout(self.mainl)
-        #adding pannel
+        # adding pannel
         self.horizontal = QHBoxLayout()
         self.left_pannel = QVBoxLayout()
         self.right_pannel = QVBoxLayout()
         self.tab_layout = QVBoxLayout()
         self.horizontal.addLayout(self.left_pannel)
-        #self.horizontal.addLayout(self.right_pannel)
+        # self.horizontal.addLayout(self.right_pannel)
         self.horizontal.addLayout(self.tab_layout)
         self.mainl.addLayout(self.horizontal)
-        #add widgets for left pannel
+        # add widgets for left pannel
         self.device_list = QListWidget()
         self.refresh_btn = QPushButton(self.lang[self.params['lang']]['refresh_btn'])
         self.left_pannel.addWidget(self.device_list)
         self.left_pannel.addWidget(self.refresh_btn)
-        #add right pannel
+        # add right pannel
         self.tabs = QTabWidget()
 
         self.scan_widget = QWidget()
@@ -184,8 +185,8 @@ class MainWindow(QWidget):
         self.right_panel_horizontal.addWidget(self.scan_btn)
         self.right_panel_horizontal.addWidget(self.save_btn)
         self.scan_widget.setLayout(self.right_pannel)
-        self.tabs.addTab(self.scan_widget , self.lang[self.params['lang']]['scan_tb'])
-        #Page Parameters
+        self.tabs.addTab(self.scan_widget, self.lang[self.params['lang']]['scan_tb'])
+        # Page Parameters
         self.setting_widget = QWidget()
         self.setting_layout = QVBoxLayout()
         self.page_group = QGroupBox(self.lang[self.params['lang']]['page_pr'])
@@ -199,43 +200,43 @@ class MainWindow(QWidget):
         self.page_group_layout.addWidget(self.color_drop)
         self.setting_layout.addWidget(self.page_group)
         self.setting_widget.setLayout(self.setting_layout)
-        #self.border_height_label = QLabel('Scan Area Height')
-        #self.border_width_label = QLabel('Scan Area Width')
-        #self.border_height = QLineEdit()
-        #self.border_width = QLineEdit()
+        # self.border_height_label = QLabel('Scan Area Height')
+        # self.border_width_label = QLabel('Scan Area Width')
+        # self.border_height = QLineEdit()
+        # self.border_width = QLineEdit()
         self.dropdown = QComboBox()
         self.dropdown.addItem('A4')
         self.dropdown.addItem('A5')
         self.dropdown.addItem('A6')
         self.page_seting_autol = QLabel(self.lang[self.params['lang']]['page_tx'])
-        #self.page_seting_manuall = QLabel('Manual')
+        # self.page_seting_manuall = QLabel('Manual')
         self.page_group_layout.addWidget(self.page_seting_autol)
         self.page_group_layout.addWidget(self.dropdown)
         self.dpi_drop = QComboBox()
-        #self.dpi_input.setPlaceholderText('DPI')
-        for i in range(100 , 1300 , 100):
+        # self.dpi_input.setPlaceholderText('DPI')
+        for i in range(100, 1300, 100):
             self.dpi_drop.addItem(str(i))
         self.page_group_layout.addWidget(self.dpi_drop)
-        #self.page_group_layout.addWidget(self.page_seting_manuall)
-        #self.page_group_layout.addWidget(self.border_height_label)
-        #self.page_group_layout.addWidget(self.border_height)
-        #self.page_group_layout.addWidget(self.border_width_label)
-        #self.page_group_layout.addWidget(self.border_width)
+        # self.page_group_layout.addWidget(self.page_seting_manuall)
+        # self.page_group_layout.addWidget(self.border_height_label)
+        # self.page_group_layout.addWidget(self.border_height)
+        # self.page_group_layout.addWidget(self.border_width_label)
+        # self.page_group_layout.addWidget(self.border_width)
 
-        #Save Parameters
+        # Save Parameters
         self.save_group = QGroupBox(self.lang[self.params['lang']]['save_pr'])
         self.save_setting_layout = QVBoxLayout()
         self.save_drop = QComboBox()
         self.save_drop.addItem('png')
         self.save_drop.addItem('jpeg')
         self.save_drop.addItem('bmp')
-        #self.save_name = QLineEdit()
-        #self.save_name.setPlaceholderText('File Name')
+        # self.save_name = QLineEdit()
+        # self.save_name.setPlaceholderText('File Name')
         self.save_group.setLayout(self.save_setting_layout)
         self.save_setting_layout.addWidget(self.save_drop)
-        #self.save_setting_layout.addWidget(self.save_name)
+        # self.save_setting_layout.addWidget(self.save_name)
         self.setting_layout.addWidget(self.save_group)
-        #App Parameters
+        # App Parameters
         self.app_group = QGroupBox(self.lang[self.params['lang']]['app_pr'])
         self.app_layout = QVBoxLayout()
         self.setting_app_group = QGroupBox(self.lang[self.params['lang']]['app_set_pr'])
@@ -253,8 +254,8 @@ class MainWindow(QWidget):
         self.appearance_settings = QGroupBox(self.lang[self.params['lang']]['app_appr_pr'])
         self.appearance_layout = QVBoxLayout()
         self.language_drop = QComboBox()
-        #self.language_drop.addItem('Українська')
-        #self.language_drop.addItem('English')
+        # self.language_drop.addItem('Українська')
+        # self.language_drop.addItem('English')
         self.theme_drop = QComboBox()
         self.theme_drop.addItem('Material dark')
         self.theme_drop.addItem('Material light')
@@ -268,15 +269,11 @@ class MainWindow(QWidget):
         self.setting_layout.addWidget(self.app_group)
         self.appearance_layout.addWidget(self.theme_drop)
 
-
-
-
-        #tabs
-        self.tabs.addTab(self.setting_widget , self.lang[self.params['lang']]['setting_tb'])
+        # tabs
+        self.tabs.addTab(self.setting_widget, self.lang[self.params['lang']]['setting_tb'])
         self.tab_layout.addWidget(self.tabs)
 
-
-        #connects
+        # connects
         self.theme_drop.currentTextChanged.connect(self.apply_theme)
         self.language_drop.currentTextChanged.connect(self.change_lang)
         self.dpi_drop.currentTextChanged.connect(self.dpi_change)
@@ -295,24 +292,22 @@ class MainWindow(QWidget):
             self.apply_settings()
             self.auto_settings.setCheckState(Qt.CheckState(2))
 
-
-    def change_auto_settings(self , state):
+    def change_auto_settings(self, state):
         if state == 0:
             self.params['auto_settings'] = False
         else:
             self.params['auto_settings'] = True
-    def change_lang(self , lang):
+
+    def change_lang(self, lang):
         self.params['lang'] = lang
 
-    def add_new_size(self , height , width):
-        self.custome[height , 'x' , width] = {'height': int(height) , 'width' : int(width)}
-        self.dropdown.addItem(height , 'x' , width)
+    def add_new_size(self, height, width):
+        self.custome[height, 'x', width] = {'height': int(height), 'width': int(width)}
+        self.dropdown.addItem(height, 'x', width)
 
-
-
-    def color_change(self , mode):
+    def color_change(self, mode):
         try:
-            for key , item in self.lang[self.params['lang']].items():
+            for key, item in self.lang[self.params['lang']].items():
                 if item == mode:
                     print(key)
                     if key == 'color_color':
@@ -322,44 +317,43 @@ class MainWindow(QWidget):
         except:
             print('Color set err')
 
-    def dpi_change(self ,text):
+    def dpi_change(self, text):
         try:
             self.params['dpi'] = int(text)
             self.size_setting(self.dropdown.currentText())
         except:
             print('Dpi chage err')
 
-    def page_setting(self , height , width):
+    def page_setting(self, height, width):
         try:
             self.params['ah'] = height
             self.params['aw'] = width
         except:
             print('page err')
-            print(height, ' ' , width)
+            print(height, ' ', width)
 
-    def size_setting(self , current):
+    def size_setting(self, current):
         try:
             if current == 'A4':
-                height = round((29.7 / 2.54) * self.params['dpi'])
-                width = round((21 / 2.54) * self.params['dpi'])
+                height = round(29.7 * self.params['dpi'])
+                width = round(21 * self.params['dpi'])
                 print(height, ' ', width)
-                self.page_setting(height , width)
+                self.page_setting(height, width)
             elif current == 'A5':
-                height = round((21 / 2.54) * self.params['dpi'])
-                width = round((14.8 / 2.54) * self.params['dpi'])
+                height = round(21 * self.params['dpi'])
+                width = round(14.8 * self.params['dpi'])
                 print(height, ' ', width)
                 self.page_setting(height, width)
             else:
-                height = round((14.8 / 2.54) * self.params['dpi'])
-                width = round((10.5 / 2.54) * self.params['dpi'])
+                height = round(14.8 * self.params['dpi'])
+                width = round(10.5 * self.params['dpi'])
                 print(height, ' ', width)
                 self.page_setting(height, width)
             self.params['size'] = current
         except:
             print('Size change err')
 
-
-    def apply_theme(self , text):
+    def apply_theme(self, text):
         try:
             if text == "Material light":
                 apply_stylesheet(app, theme='light_amber.xml')
@@ -368,9 +362,6 @@ class MainWindow(QWidget):
             self.params['theme'] = text
         except:
             print('Theme err')
-
-
-
 
     def update_list(self):
         try:
@@ -387,26 +378,27 @@ class MainWindow(QWidget):
 
     def save(self):
         Fdialog = QFileDialog()
-        #Fdialog.setOptions(QFileDialog.ShowDirsOnly)
+        # Fdialog.setOptions(QFileDialog.ShowDirsOnly)
         workdir = Fdialog.getExistingDirectory(caption=self.lang[self.params['lang']]['save_win_title'])
         print(workdir)
         try:
             dt_string = datetime.now().strftime("%d-%m-%Y %H_%M_%S").split(' ')
-            self.device_im.save(workdir +'/' + dt_string[0] +'-'+dt_string[1] + '.' + self.params['save_extension'], self.params['save_mode'] )
+            self.device_im.save(workdir + '/' + dt_string[0] + '-' + dt_string[1] + '.' + self.params['save_extension'],
+                                self.params['save_mode'])
         except:
             self.image.setText('Save err')
 
     def scan(self):
-        #print(self.device_list.currentIndex().row())
-        #print(self.devices[self.device_list.currentIndex().row()])
-        #try:
+        # print(self.device_list.currentIndex().row())
+        # print(self.devices[self.device_list.currentIndex().row()])
+        # try:
         try:
             dev = sane.open(self.devices[self.device_list.currentIndex().row()][0])
         except:
             print('Device open err')
             return
-        #print(dev.get_parameters())
-        #print(dev.get_options())
+        # print(dev.get_parameters())
+        # print(dev.get_options())
         try:
             dev.mode = self.params['mode']
 
@@ -425,15 +417,16 @@ class MainWindow(QWidget):
             print('Dpi err')
         try:
             if not self.current_scan_state:
-                threat = threading.Thread(target=self.scan_thread , args=(dev,))
+                threat = threading.Thread(target=self.scan_thread, args=(dev,))
                 threat.start()
             else:
                 pass
         except:
             print('threat err')
-        #except:
+        # except:
         #    self.image.setText('Err')
-    def scan_thread(self , dev):
+
+    def scan_thread(self, dev):
         try:
             self.current_scan_state = True
             dev.start()
@@ -448,8 +441,7 @@ class MainWindow(QWidget):
             print('scan err')
             self.current_scan_state = False
 
-
-    def settings_save(self , current):
+    def settings_save(self, current):
         self.params['save_mode'] = current.upper()
         self.params['save_extension'] = current.lower()
 
@@ -465,21 +457,21 @@ class MainWindow(QWidget):
         except:
             print('Setting save err')
 
-    def loads_setting(self , mode='0'):
+    def loads_setting(self, mode='0'):
         try:
             location = os.getenv("HOME")
             if mode == 'startup':
                 try:
-                    with open(location +'/' + '.pyscan_setting.toml' , 'r') as file:
+                    with open(location + '/' + '.pyscan_setting.toml', 'r') as file:
                         _ = tomlkit.parse(file.read())
                         self.params = _['params']
                         self.lang.update(_['langs'])
-                        #self.apply_settings()
+                        # self.apply_settings()
                 except:
                     print('err load setting using default')
             else:
                 try:
-                    with open(location +'/' + '.pyscan_setting.toml' , 'r') as file:
+                    with open(location + '/' + '.pyscan_setting.toml', 'r') as file:
                         _ = tomlkit.parse(file.read())
                         self.params = _['params']
                         self.lang = _['langs']
@@ -493,23 +485,23 @@ class MainWindow(QWidget):
         try:
             fdialog = QFileDialog()
             fdialog.setMimeTypeFilters(['application/json'])
-            url = fdialog.getOpenFileUrl(caption=self.lang[self.params['lang']]['load_lang_win_title'] , filter='*.json')
+            url = fdialog.getOpenFileUrl(caption=self.lang[self.params['lang']]['load_lang_win_title'], filter='*.json')
             url = url[0].url().split('//')[1]
-            with open(url , 'r') as file:
+            with open(url, 'r') as file:
                 loaded = json.load(file)
             self.lang.update(loaded)
             print(self.lang)
         except:
             print('lang load err')
-    #def load_langs(self):
-        #location = os.getenv("HOME")
-        #try:
-            #with open(location +'/' + '.pyscan_langs.json' , 'r') as file:
-                #self.lang = json.load(file)
-        #except:
-            #with open(location + '/' + '.pyscan_langs.json', 'w') as file:
-                #json.dump(self.lang , file)
 
+    # def load_langs(self):
+    # location = os.getenv("HOME")
+    # try:
+    # with open(location +'/' + '.pyscan_langs.json' , 'r') as file:
+    # self.lang = json.load(file)
+    # except:
+    # with open(location + '/' + '.pyscan_langs.json', 'w') as file:
+    # json.dump(self.lang , file)
 
     def apply_settings(self):
         try:
@@ -527,18 +519,18 @@ class MainWindow(QWidget):
                 self.auto_settings.setCheckState(Qt.CheckState(2))
             else:
                 self.auto_settings.setCheckState(Qt.CheckState(0))
-        except:
+        except Exception as e:
             print('Apply settings err')
             self.saves_setting()
 
 
 class AddSize(QWidget):
-    def __init__(self , func):
+    def __init__(self, func):
         super().__init__()
         self.func = func
         self.setWindowTitle('Add custom scan size')
         self.layout = QVBoxLayout()
-        self.input_layout  = QHBoxLayout()
+        self.input_layout = QHBoxLayout()
         self.button_layout = QHBoxLayout()
         self.height = QLineEdit()
         self.height.setPlaceholderText('Height (cm)')
@@ -559,24 +551,26 @@ class AddSize(QWidget):
 
     def apply_size(self):
         self.close()
-        self.func(self.height.text , self.width.text)
+        self.func(self.height.text, self.width.text)
 
     def cancel(self):
         self.close()
 
+
 def run():
     sane.init()
-    window=MainWindow()
-    #window.loads_setting()
+    window = MainWindow()
+    # window.loads_setting()
     window.update_list()
     window.show()
-    window.resize(800 , 500)
+    window.resize(800, 500)
     window.setWindowTitle('PySpection')
 
     app.exec()
     if window.params['auto_settings']:
         window.saves_setting()
     sane.exit()
+
 
 if __name__ == '__main__':
     run()
