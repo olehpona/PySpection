@@ -9,7 +9,7 @@ import threading
 from PIL.ImageQt import ImageQt
 from PyQt6.QtGui import QPixmap, QIcon
 from PyQt6.QtWidgets import QWidget, QListWidget, QPushButton, QApplication, QVBoxLayout, QHBoxLayout, QLabel, \
-    QFileDialog, QTabWidget, QGroupBox, QLineEdit, QComboBox, QCheckBox
+    QFileDialog, QTabWidget, QGroupBox, QLineEdit, QComboBox, QCheckBox, QSpinBox
 from PyQt6.QtCore import Qt
 from qt_material import apply_stylesheet
 
@@ -26,14 +26,15 @@ class MainWindow(QWidget):
             'sh': 300,
             'sw': 400,
             'dpi': 300,
-            'ah': 3507,
-            'aw': 2480,
+            'br_x': 3507,
+            'br_x': 2480,
             'size': 'A4',
             'save_mode': 'png',
             'save_extension': 'png',
-            'version': 3,
+            'version': 3.60,
             'lang': 'English',
-            'auto_settings': True
+            'auto_settings': True,
+            'theme': 'Material light'
         }
         self.lang = {
             'English': {
@@ -46,7 +47,9 @@ class MainWindow(QWidget):
                 'color_tx': 'Color',
                 'color_color': 'Color',
                 'color_grey': 'Grey',
-                'page_tx': 'Page scale',
+                'page_tx': 'Page size',
+                'page_tx_custom': 'Custom page size (mm)',
+                'page_tx_dpi': 'Scan DPI',
                 'save_pr': 'Save parameters',
                 'app_pr': 'App parameters',
                 'app_set_pr': 'Setting parameters',
@@ -69,6 +72,8 @@ class MainWindow(QWidget):
                 'color_color': 'Кольоровий',
                 'color_grey': 'Ч/Б',
                 'page_tx': 'Маштабування сторінки',
+                'page_tx_custom': 'Ручний розмір сторінки (мм)',
+                'page_tx_dpi': 'DPI сканування',
                 'save_pr': 'Параметри збереження',
                 'app_pr': 'Параметри програми',
                 'app_set_pr': 'Параметри налаштувань',
@@ -91,6 +96,8 @@ class MainWindow(QWidget):
                 'color_color': 'Couleur',
                 'color_grey': 'Gris',
                 'page_tx': 'Échelle de la page',
+                'page_tx_custom': 'Format de page personnalisé (mm)',
+                'page_tx_dpi': 'numériser DPI',
                 'save_pr': 'Enregistrer les paramètres',
                 'app_pr': "Paramètres de l'application",
                 'app_set_pr': 'Paramètres de réglage',
@@ -113,6 +120,8 @@ class MainWindow(QWidget):
                 'color_color': 'Kolor',
                 'color_grey': 'Szary',
                 'page_tx': 'Skala strony',
+                'page_tx_custom': 'Niestandardowy rozmiar strony (mm)',
+                'page_tx_dpi': 'Skanuj DPI',
                 'save_pr': 'Zapisz parametry',
                 'app_pr': 'Parametry aplikacji',
                 'app_set_pr': 'Ustawianie parametrów',
@@ -135,6 +144,8 @@ class MainWindow(QWidget):
                 'color_color': 'Farbe',
                 'color_grey': 'Grau',
                 'page_tx': 'Seitenskalierung',
+                'page_tx_custom': 'Benutzerdefinierte Seitengröße (mm)',
+                'page_tx_dpi': 'DPI scannen',
                 'save_pr': 'Parameter speichern',
                 'app_pr': 'App-Parameter',
                 'app_set_pr': 'Einstellungsparameter',
@@ -149,7 +160,7 @@ class MainWindow(QWidget):
         }
 
         self.custome = {}
-
+        self.current_page_change_state = False
         self.current_scan_state = False
 
         self.add_size = AddSize(self.add_new_size)
@@ -174,7 +185,6 @@ class MainWindow(QWidget):
         self.left_pannel.addWidget(self.refresh_btn)
         # add right pannel
         self.tabs = QTabWidget()
-
         self.scan_widget = QWidget()
         self.image = QLabel()
         self.right_pannel.addWidget(self.image)
@@ -204,14 +214,30 @@ class MainWindow(QWidget):
         # self.border_width_label = QLabel('Scan Area Width')
         # self.border_height = QLineEdit()
         # self.border_width = QLineEdit()
-        self.dropdown = QComboBox()
-        self.dropdown.addItem('A4')
-        self.dropdown.addItem('A5')
-        self.dropdown.addItem('A6')
+        self.pageSize = QComboBox()
+        self.pageSize.addItem('A4')
+        self.pageSize.addItem('A5')
+        self.pageSize.addItem('A6')
+        self.pageSize.addItem('Custom')
+        self.pageSize_custom_layout = QHBoxLayout()
+        self.pageSize_custom_width = QSpinBox()
+        self.pageSize_custom_width.setMinimum(1)
+        self.pageSize_custom_width.setMaximum(10000)
+        self.pageSize_custom_height = QSpinBox()
+        self.pageSize_custom_height.setMinimum(1)
+        self.pageSize_custom_height.setMaximum(10000)
+        self.pageSize_custom_label = QLabel(self.lang[self.params['lang']]['page_tx_custom'])
+        self.pageSize_custom_layout.addWidget(self.pageSize_custom_width)
+        self.pageSize_custom_layout.addWidget(self.pageSize_custom_height)
+
         self.page_seting_autol = QLabel(self.lang[self.params['lang']]['page_tx'])
         # self.page_seting_manuall = QLabel('Manual')
         self.page_group_layout.addWidget(self.page_seting_autol)
-        self.page_group_layout.addWidget(self.dropdown)
+        self.page_group_layout.addWidget(self.pageSize)
+        self.page_group_layout.addWidget(self.pageSize_custom_label)
+        self.page_group_layout.addLayout(self.pageSize_custom_layout)
+        self.page_setting_dpi = QLabel(self.lang[self.params['lang']]['page_tx_dpi'])
+        self.page_group_layout.addWidget(self.page_setting_dpi)
         self.dpi_drop = QComboBox()
         # self.dpi_input.setPlaceholderText('DPI')
         for i in range(100, 1300, 100):
@@ -277,7 +303,9 @@ class MainWindow(QWidget):
         self.theme_drop.currentTextChanged.connect(self.apply_theme)
         self.language_drop.currentTextChanged.connect(self.change_lang)
         self.dpi_drop.currentTextChanged.connect(self.dpi_change)
-        self.dropdown.currentTextChanged.connect(self.size_setting)
+        self.pageSize_custom_width.valueChanged.connect(self.manual_page_size_change)
+        self.pageSize_custom_height.valueChanged.connect(self.manual_page_size_change)
+        self.pageSize.currentTextChanged.connect(self.size_setting)
         self.color_drop.currentTextChanged.connect(self.color_change)
         self.refresh_btn.clicked.connect(self.update_list)
         self.scan_btn.clicked.connect(self.scan)
@@ -301,6 +329,18 @@ class MainWindow(QWidget):
     def change_lang(self, lang):
         self.params['lang'] = lang
 
+    def manual_page_size_change(self):
+        try:
+            if not self.current_page_change_state:
+                self.params['br_y'] = self.pageSize_custom_height.value()
+                self.params['br_x'] = self.pageSize_custom_width.value()
+                self.pageSize.setCurrentText('Custom')
+                self.params['size'] = 'Custom'
+            else:
+                self.current_page_change_state = False
+        except Exception as e:
+            print(e)
+
     def add_new_size(self, height, width):
         self.custome[height, 'x', width] = {'height': int(height), 'width': int(width)}
         self.dropdown.addItem(height, 'x', width)
@@ -320,36 +360,52 @@ class MainWindow(QWidget):
     def dpi_change(self, text):
         try:
             self.params['dpi'] = int(text)
-            self.size_setting(self.dropdown.currentText())
+            self.size_setting(self.pageSize.currentText())
         except:
             print('Dpi chage err')
 
     def page_setting(self, height, width):
         try:
-            self.params['ah'] = height
-            self.params['aw'] = width
+            self.params['br_y'] = height
+            self.params['br_x'] = width
         except:
             print('page err')
             print(height, ' ', width)
 
     def size_setting(self, current):
         try:
+
             if current == 'A4':
-                height = round(29.7 * self.params['dpi'])
-                width = round(21 * self.params['dpi'])
+                height = 297
+                width = 210
+                self.current_page_change_state = True
+                self.pageSize_custom_width.setValue(width)
+                self.current_page_change_state = True
+                self.pageSize_custom_height.setValue(height)
                 print(height, ' ', width)
                 self.page_setting(height, width)
             elif current == 'A5':
-                height = round(21 * self.params['dpi'])
-                width = round(14.8 * self.params['dpi'])
+                height = 210
+                width = 148
+                self.current_page_change_state = True
+                self.pageSize_custom_width.setValue(width)
+                self.current_page_change_state = True
+                self.pageSize_custom_height.setValue(height)
+                print(height, ' ', width)
+                self.page_setting(height, width)
+            elif current == 'A6':
+                height = 148
+                width = 105
+                self.current_page_change_state = True
+                self.pageSize_custom_width.setValue(width)
+                self.current_page_change_state = True
+                self.pageSize_custom_height.setValue(height)
                 print(height, ' ', width)
                 self.page_setting(height, width)
             else:
-                height = round(14.8 * self.params['dpi'])
-                width = round(10.5 * self.params['dpi'])
-                print(height, ' ', width)
-                self.page_setting(height, width)
+                pass
             self.params['size'] = current
+            self.current_page_change_state = False
         except:
             print('Size change err')
 
@@ -406,8 +462,10 @@ class MainWindow(QWidget):
             print('params mode err')
             print(self.params)
         try:
-            dev.br_x = self.params['aw']
-            dev.br_y = self.params['ah']
+            dev.tl_x = 0
+            dev.tl_y = 0
+            dev.br_x = self.params['br_x']
+            dev.br_y = self.params['br_y']
         except:
             print('params area err Using default')
             print(self.params)
@@ -447,7 +505,6 @@ class MainWindow(QWidget):
 
     def saves_setting(self):
         try:
-            location = os.getenv("HOME")
             _ = {}
             _['params'] = self.params
             _['langs'] = self.lang
@@ -505,11 +562,14 @@ class MainWindow(QWidget):
 
     def apply_settings(self):
         try:
+            self.pageSize.setCurrentText(self.params['size'])
+            self.pageSize_custom_height.setValue(self.params['br_y'])
+            self.pageSize_custom_width.setValue(self.params['br_x'])
+
             if self.params['mode'] == 'color':
                 self.color_drop.setCurrentText(self.lang[self.params['lang']]['color_color'])
             else:
                 self.color_drop.setCurrentText(self.lang[self.params['lang']]['color_grey'])
-            self.dropdown.setCurrentText(self.params['size'])
             self.dpi_drop.setCurrentText(str(self.params['dpi']))
             self.save_drop.setCurrentText(self.params['save_extension'])
             self.language_drop.setCurrentText(self.params['lang'])
@@ -520,7 +580,7 @@ class MainWindow(QWidget):
             else:
                 self.auto_settings.setCheckState(Qt.CheckState(0))
         except Exception as e:
-            print('Apply settings err')
+            print(e)
             self.saves_setting()
 
 
@@ -560,7 +620,7 @@ class AddSize(QWidget):
 def run():
     sane.init()
     window = MainWindow()
-    # window.loads_setting()
+    window.loads_setting()
     window.update_list()
     window.show()
     window.resize(800, 500)
