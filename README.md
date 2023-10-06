@@ -13,8 +13,10 @@
 ## How to build
 ### 1. Clone repo:
     git clone https://github.com/whyDEDUS/PySpection.git
-### 2. Start build:
-    python3 setup.py install
+### 2. Install nuitka:
+    python -m pip install nuitka
+### 3. Build:
+    python -m nuitka main.py
 ## How to install
 ### 1. Download latest release:
     https://github.com/whyDEDUS/PySpection/releases
@@ -22,5 +24,6 @@
     1. Using tar utility:
         tar -xf v-3.21.tar.gz
     2. Using default file manager or other apps
+    3. Just run pyspection.bin
 ### 3. Run shell script:
-    bush ./install.sh
+    bash ./install.sh
